@@ -1,0 +1,22 @@
+{
+  "timeZone": "America/New_York",
+  "dependencies": {
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/gmail.addons.current.action.compose",
+    "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
+    "https://www.googleapis.com/auth/gmail.addons.execute"
+  ],
+  "gmail": {
+    "name": "Tag Customers",
+    "logoUrl": "https://www.iconbolt.com/download/size:48/format:png/plain/bootstrap-icons/tags.svg",
+    "contextualTriggers": [
+      {
+        "unconditional": {},
+        "onTriggerFunction": "assignCustomerTags"
+      }
+    ]
+  }
+}

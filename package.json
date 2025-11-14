@@ -1,0 +1,9 @@
+{
+	"devDependencies": {
+		"clasp": "^1.0.0",
+		"typescript": "^5.9.3",
+		"typescript-plugin-tgas-local": "^0.0.3",
+		"tgas-local": "^1.0.6",
+		"@types/google-apps-script": "^2.0.7"
+	}
+}
