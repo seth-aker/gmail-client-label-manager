@@ -2,12 +2,15 @@ const EMAIL_VALIDATION = CardService.newValidation().setInputType(CardService.In
 function createAddEmailCard() {
   const card = CardService.newCardBuilder()
   const header = CardService.newCardHeader().setTitle("Add emails to a tag")
-  card.setHeader(header)
-
+  const labelSelector = createLabelsSelectionInput()
   const textInput = CardService.newTextInput()
-    .setFieldName('customer-email')
-    .setTitle('customerEmail')
-    .setValidation(EMAIL_VALIDATION)
+  .setFieldName('customer-email')
+  .setTitle('customerEmail')
+  .setValidation(EMAIL_VALIDATION)
+  
+  
+  card.setHeader(header)
+  
 }
 function createLabelsSelectionInput() {
   const labels = GmailApp.getUserLabels().filter((label) => {
