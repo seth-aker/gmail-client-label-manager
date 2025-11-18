@@ -1,4 +1,7 @@
-const DOUG_EMAIL = 'douglas_seyler@trimble.com'
+const CACHE_KEY = 'emailLabels'
+type Label = string
+type Email = string
+
 function onEmailOpen(event: GoogleAppsScript.Addons.EventObject) {
   const accessToken = event.gmail?.accessToken
   const threadId = event.gmail?.threadId
@@ -6,25 +9,74 @@ function onEmailOpen(event: GoogleAppsScript.Addons.EventObject) {
     return
   }
   GmailApp.setCurrentMessageAccessToken(accessToken)
-  const thread = GmailApp.getThreadById(threadId)
+  const openThread = GmailApp.getThreadById(threadId)
 
-  const messages = thread.getMessages()
-  
-  
-  for(const message of messages) {
-    const messageSubject = message.getSubject()
-    const messageSender = message.getFrom()
-    Logger.log(`Viewing message: ${messageSubject} from ${messageSender}`)
-    if(!messageSubject.includes("Implementation transferred to you") || messageSender !== DOUG_EMAIL) {
-      continue
-    }
-    const messageBody = message.getBody()
-    const customerName = findCustomerName(messageBody)
-    
-    const isOps = messageBody.includes("OPS")
-    createLabel(customerName, isOps)
+  const emailLabelCache = new Map<Email, Label>(JSON.parse(PropertiesService.getUserProperties().getProperty(CACHE_KEY) ?? ''))
+
+  let threadEmails: Set<string> = getAddressesInThread(openThread)
+
+  for(const email of threadEmails) {
+    const labelName = emailLabelCache.get(email)
+    if(labelName) {
+      const label = GmailApp.getUserLabelByName(labelName)
+      openThread.addLabel(label)
+      break;
+    }  
   }
+  if(openThread.getLabels().length > 0)  return;
 
+  // Iterate through existing labels
+  for(const label of GmailApp.getUserLabels()) {
+    const threads = label.getThreads()
+    // get all threads using this label
+    for(const thread of threads) {
+      const addresses = getAddressesInThread(thread)
+      // get the addresses associated with said label and add them to the cache if they aren't there already
+      for(const address of addresses) {
+        if(!emailLabelCache.has(address)) {
+          emailLabelCache.set(address, label.getName())
+        }
+        if(openThread.getLabels().length < 1 && threadEmails.has(address)) {
+          openThread.addLabel(label)
+        }
+      }
+    }
+  }
+  
+  updateEmailLabelCache(emailLabelCache)
+
+  // for(const message of messages) {
+  //   const messageSubject = message.getSubject()
+  //   const messageSender = message.getFrom()
+  //   Logger.log(`Viewing message: ${messageSubject} from ${messageSender}`)
+  //   if(!messageSubject.includes("Implementation transferred to you") || messageSender !== DOUG_EMAIL) {
+  //     continue
+  //   }
+  //   const messageBody = message.getBody()
+  //   const customerName = findCustomerName(messageBody)
+    
+  //   const isOps = messageBody.includes("OPS")
+  //   createLabel(customerName, isOps)
+  // }
+
+}
+function getAddressesInThread(thread: GoogleAppsScript.Gmail.GmailThread) {
+  const messages = thread.getMessages()
+  const addresses = new Set<string>()
+  for(const message of messages) {
+    const fromEmails = message.getFrom()
+    const toEmails = message.getTo().split(',')
+    const ccs = message.getCc().split(',')
+    const emails = [fromEmails, ...toEmails, ...ccs].filter(each => !each.includes('@trimble.com'))
+    emails.forEach(email => addresses.add(email))
+  }
+  return addresses
+}
+
+function updateEmailLabelCache(cache: Map<Email, Label>) {
+  const userProperties = PropertiesService.getUserProperties()
+  const cacheString = JSON.stringify(cache)
+  userProperties.setProperty(CACHE_KEY, cacheString)
 }
 
 function createLabel(customerName: string, isOps: boolean) {
